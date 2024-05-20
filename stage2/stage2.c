@@ -482,27 +482,6 @@ void stage2(void) {
 	kmem[2] = 0x00;
 	kmem[3] = 0x00;
 #endif
-#if FIRMWARE == 1100 // FW 11.00, only neeeded for 11.00
-  kmem = (uint8_t *)&kbase[0x1E4C33]; // Move to offsets.h?
-  kmem[0] = 0x90;
-  kmem[1] = 0x90;
-  kmem[2] = 0x90;
-  kmem[3] = 0x90;
-  kmem[4] = 0x90;
-  kmem[5] = 0x90;
- 
-  kmem = (uint8_t *)&kbase[0x1E4C43];
-  kmem[0] = 0x90;
-  kmem[1] = 0x90;
-  kmem[2] = 0x90;
-  kmem[3] = 0x90;
-  kmem[4] = 0x90;
-  kmem[5] = 0x90;
- 
-  kmem = (uint8_t *)&kbase[0x1E4C63];
-  kmem[0] = 0x90;
-  kmem[1] = 0xE9;
-#endif
 #endif
 
   // Install kexec syscall 11
