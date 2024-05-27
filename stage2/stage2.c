@@ -336,7 +336,7 @@ static int sys_kexec(struct thread * td, struct sys_kexec_args * uap) {
 }
 
 void stage2(void) {
-  
+
   // Use "kmem" for all patches
 	uint8_t *kmem;
   uint64_t kaslr_offset = rdmsr(MSR_LSTAR) - kdlsym_addr_Xfast_syscall;
@@ -425,13 +425,33 @@ void stage2(void) {
 	kmem[2] = 0xEB;
 	kmem[3] = 0x01;
 
-  
+
   // Change directory depth limit from 9 to 64
 	kmem = (uint8_t *)&kbase[depth_patch];
 	kmem[0] = 0x40;
 #endif
 
+#if FIRMWARE == 1050
+  kmem = (uint8_t *)&kbase[0x213013];
+  kmem[0] = 0x90;
+  kmem[1] = 0x90;
+  kmem[2] = 0x90;
+  kmem[3] = 0x90;
+  kmem[4] = 0x90;
+  kmem[5] = 0x90;
 
+  kmem = (uint8_t *)&kbase[0x213023];
+  kmem[0] = 0x90;
+  kmem[1] = 0x90;
+  kmem[2] = 0x90;
+  kmem[3] = 0x90;
+  kmem[4] = 0x90;
+  kmem[5] = 0x90;
+
+  kmem = (uint8_t *)&kbase[0x213043];
+  kmem[0] = 0x90;
+  kmem[1] = 0xE9;
+#endif
 #if FIRMWARE == 1100 // FW 11.00, only neeeded for 11.00
   kmem = (uint8_t *)&kbase[0x1E4C33];
   kmem[0] = 0x90;
@@ -440,7 +460,7 @@ void stage2(void) {
   kmem[3] = 0x90;
   kmem[4] = 0x90;
   kmem[5] = 0x90;
- 
+
   kmem = (uint8_t *)&kbase[0x1E4C43];
   kmem[0] = 0x90;
   kmem[1] = 0x90;
@@ -448,7 +468,7 @@ void stage2(void) {
   kmem[3] = 0x90;
   kmem[4] = 0x90;
   kmem[5] = 0x90;
- 
+
   kmem = (uint8_t *)&kbase[0x1E4C63];
   kmem[0] = 0x90;
   kmem[1] = 0xE9;
@@ -463,6 +483,20 @@ void stage2(void) {
 	kmem[3] = 0x00;
 
 	kmem = (uint8_t *)&kbase[0x004e802f];
+	kmem[0] = 0x00;
+	kmem[1] = 0x00;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+#endif
+#if FIRMWARE == 1050 // FW 11.00, 9.00 already has goldhen
+	// Patch debug setting errors
+	kmem = (uint8_t *)&kbase[0x4e6da8];
+	kmem[0] = 0x00;
+	kmem[1] = 0x00;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+
+	kmem = (uint8_t *)&kbase[0x4e7e6e];
 	kmem[0] = 0x00;
 	kmem[1] = 0x00;
 	kmem[2] = 0x00;
@@ -523,7 +557,7 @@ void stage2(void) {
   shellcore_fpkg_patch(td, kbase);
   printf("Done.\n");
 
-   fd = ksys_open(td, "/dev/notification0", O_WRONLY, 0);
+  fd = ksys_open(td, "/dev/notification0", O_WRONLY, 0);
   if (!fd)
     fd = ksys_open(td, "/dev/notification0", O_WRONLY | O_NONBLOCK, 0);
   if (!fd)
@@ -603,7 +637,7 @@ return;
  // r = proc_write_mem(td, kbase, p, (void * ) PAYLOAD_BASE, buffer, payload_size, NULL);
   struct iovec iov;
     struct uio uio;
-    
+
     int (*proc_rwmem)(struct proc *p, struct uio *uio) = (void *)(kbase + proc_rmem_offset);
 
     if(payload_size >= 0x400000){
@@ -626,7 +660,7 @@ return;
 
     printf("proc_rw_mem: uio.uio_resid: %d\n", uio.uio_resid);
     r = proc_rwmem(p, &uio);
-    
+
   #else
   r = proc_write_mem(td, kbase, p, (void * ) PAYLOAD_BASE, payloadbin_size, payloadbin, NULL);
   #endif

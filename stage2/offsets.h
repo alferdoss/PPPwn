@@ -47,10 +47,10 @@
 #define sceKernelIsGenuineCEX_1 0x008621D4
 #define sceKernelIsGenuineCEX_2 0x008AFBC2
 #define sceKernelIsGenuineCEX_3 0x00A27BD4
-#define dipsw_libSceDipsw 0x0016EAD2 
-#define dipsw_libSceDipsw_1 0x00249F7B 
-#define dipsw_libSceDipsw_2 0x00862202 
-#define dipsw_libSceDipsw_3 0x00A27C02 
+#define dipsw_libSceDipsw 0x0016EAD2
+#define dipsw_libSceDipsw_1 0x00249F7B
+#define dipsw_libSceDipsw_2 0x00862202
+#define dipsw_libSceDipsw_3 0x00A27C02
 #define sys_debug_menu 0x0001D1C0
 #define sys_debug_menu_1 0x0001D520
 #endif
@@ -78,7 +78,7 @@
 #define vm_map_lock_read_offset 0x0007BB80
 #define vm_map_unlock_read_offset 0x0007BBD0
 #define vm_map_lookup_entry_offset 0x0007C1C0
-#define M_TEMP_offset 0x015621E0 
+#define M_TEMP_offset 0x015621E0
 #define proc_rmem_offset 0x0041EB00
 #define vm_map_findspace_offset 0x0007EC40
 #define vm_map_delete_offset 0x0007E680
@@ -259,7 +259,7 @@
 #define sys_debug_menu_1 0x1d1b0
 #endif
 
-// libkernel_sys.srpx 
+// libkernel_sys.srpx
 #define _scePthreadAttrInit_offset 0x13e20
 #define _scePthreadAttrSetstacksize_offset 0x13e40
 #define _scePthreadCreate_offset 0x14260
@@ -336,6 +336,64 @@
 #define kdlsym_addr_copyinstr_patch2 0xffffffff822d7a6f
 #define kdlsym_addr_copyinstr_patch3 0xffffffff822d7aa0
 
+#if ENABLE_DEBUG_MENU
+// ShellCore offsets
+#define enable_data_mount_patch 0x31e890
+#define enable_fpkg_patch 0x3d544f
+#define fake_free_patch 0xfb5d59
+#define pkg_installer_patch 0x9f5fd1
+#define ext_hdd_patch 0x606b7d
+
+#define sceKernelIsGenuineCEX 0x16b664
+#define sceKernelIsGenuineCEX_1 0x85bab4
+#define sceKernelIsGenuineCEX_2 0x8abce2
+#define sceKernelIsGenuineCEX_3 0xa0ca84
+#define dipsw_libSceDipsw 0x16b692
+#define dipsw_libSceDipsw_1 0x249b0c
+#define dipsw_libSceDipsw_2 0x85bae2
+#define dipsw_libSceDipsw_3 0xa0cab2
+
+// debug menu libkernel_sys.prx
+#define sys_debug_menu 0x1cfc0
+#define sys_debug_menu_1 0x1d320
+#endif
+
+// libkernel_sys.srpx
+#define _scePthreadAttrInit_offset 0x13f70
+#define _scePthreadAttrSetstacksize_offset 0x13f90
+#define _scePthreadCreate_offset 0x143b0
+#define _thr_initial_offset 0x8e830
+
+//kern
+#define vm_map_protect_p 0x47b2ec
+#define ptrace_p 0x424e85
+#define ptrace_p2 0x425371
+#define disable_aslr_p 0x345e04
+#define sceSblACMgrIsAllowedSystemLevelDebugging_p 0x1f4470
+#define kemem_2 0x428a34
+#define kemem_1 0x428a2c
+
+#define vm_map_lock_offset 0x476180
+#define vm_map_insert_offset 0x4774d0
+#define vm_map_unlock_offset 0x4761f0
+#define malloc_offset 0x36e120
+#define free_offset 0x36e2e0
+#define vm_map_lock_read_offset 0x4762d0
+#define vm_map_unlock_read_offset 0x476320
+#define vm_map_lookup_entry_offset 0x476910
+#define M_TEMP_offset 0x1a5fe30
+#define proc_rmem_offset 0x4244a0
+#define vm_map_findspace_offset 0x479390
+#define vm_map_delete_offset 0x478dd0
+#define create_thread_offset 0x3384e0
+#define all_proc_offset 0x2269f30
+
+#if MODULE_DUMPER
+#define sceSblACMgrHasMmapSelfCapability 0x1f44e0
+#define sceSblACMgrIsAllowedToMmapSelf 0x1f4500
+#define sceSblAuthMgrIsLoadable 0x19e151
+#define depth_patch 0xdaa46
+#endif
 
 #elif FIRMWARE == 1100 // FW 11.00
 
@@ -373,17 +431,21 @@
 #define sceKernelIsGenuineCEX_1 0x086BD24 //
 #define sceKernelIsGenuineCEX_2 0x08BC022 //
 #define sceKernelIsGenuineCEX_3 0x0A1D6C4//
-#define dipsw_libSceDipsw 0x016B692 // 
+#define dipsw_libSceDipsw 0x016B692 //
 #define dipsw_libSceDipsw_1 0x249E0C //
 #define dipsw_libSceDipsw_2 0x086BD52 //
-#define dipsw_libSceDipsw_3 0xA1D6F2 // 
+#define dipsw_libSceDipsw_3 0xA1D6F2 //
+
+#define sys_debug_menu = 0x1cfc0
+#define sys_debug_menu_1 = 0x1d320
+
 // debug menu libkernel_sys.prx
 #define sys_debug_menu   0x1D100
 #define sys_debug_menu_1 0x1D460
 #endif
 
-// libkernel_sys.srpx 
-#define _scePthreadAttrInit_offset 0x14010 
+// libkernel_sys.srpx
+#define _scePthreadAttrInit_offset 0x14010
 #define _scePthreadAttrSetstacksize_offset 0x14030
 #define _scePthreadCreate_offset 0x14450
 #define _thr_initial_offset 0x8E830
