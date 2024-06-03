@@ -197,6 +197,64 @@
 
 #elif (FIRMWARE == 950 || FIRMWARE == 960) // FW 9.50 / 9.60
 
+#if FIRMWARE == 960
+
+#if ENABLE_DEBUG_MENU
+#define enable_data_mount_patch 0x0031D651
+#define enable_fpkg_patch 0x003D4E9F
+#define fake_free_patch 0x00FBD319 
+#define pkg_installer_patch 0x009FB811
+#define ext_hdd_patch 0x00610AED 
+#define debug_trophies_patch 0x00741E09 
+
+#define sceKernelIsGenuineCEX 0x0016CD64 
+#define sceKernelIsGenuineCEX_1 0x008630A4 
+#define sceKernelIsGenuineCEX_2 0x008B1CA2 
+#define sceKernelIsGenuineCEX_3 0x00A122C4 
+#define dipsw_libSceDipsw 0x0016CD92 
+#define dipsw_libSceDipsw_1 0x0024A35C 
+#define dipsw_libSceDipsw_2 0x008630D2 
+#define dipsw_libSceDipsw_3 0x00A122F2 
+
+
+#define sys_debug_menu 0x0001CE50
+#define sys_debug_menu_1 0x0001D1B0
+#endif
+
+// libkernel_sys.srpx
+#define _scePthreadAttrInit_offset 0x00013E20
+#define _scePthreadAttrSetstacksize_offset 0x00013E40
+#define _scePthreadCreate_offset 0x00014260
+#define _thr_initial_offset 0x8E830 // Identical to 9.00
+
+//kern
+// kbase + offset (offsets are not in theflow format)
+#define vm_map_protect_p 0x00196D3B
+#define ptrace_p 0x0047A005
+#define ptrace_p2 0x0047A4F1
+#define disable_aslr_p 0x0029AE74
+#define sceSblACMgrIsAllowedSystemLevelDebugging_p 0x001E2BB0 
+#define kemem_2 0x00188AA4
+#define kemem_1 0x00188A9C
+#define vm_map_lock_offset 0x00191BE0
+#define vm_map_insert_offset 0x00192F30
+#define vm_map_unlock_offset 0x00191C50 
+#define malloc_offset 0x0029D330
+#define free_offset 0x0029D4F0
+#define vm_map_lock_read_offset 0x00191D30 
+#define vm_map_unlock_read_offset 0x00191D80
+#define vm_map_lookup_entry_offset 0x00192370
+#define M_TEMP_offset 0x01A4ECB0 
+#define proc_rmem_offset 0x00479620
+#define vm_map_findspace_offset 0x00194DF0
+#define vm_map_delete_offset 0x00194830
+#define create_thread_offset 0x001EC430
+#define all_proc_offset 0x0221D2A0
+#define sys_dynlib_dlsym_p 0x0019FEDF
+#define sys_dynlib_dlsym_p2 0x00011960
+
+#endif
+
 #define kdlsym_addr_Xfast_syscall 0xffffffff822001c0
 #define kdlsym_addr_printf 0xffffffff82405470
 
@@ -441,7 +499,7 @@
 
 // debug menu libkernel_sys.prx
 #define sys_debug_menu   0x1D100
-#define sys_debug_menu_1 0x1D460
+#define sys_debug_menu_1 0x1D1B0
 #endif
 
 // libkernel_sys.srpx
