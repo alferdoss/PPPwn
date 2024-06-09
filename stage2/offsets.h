@@ -496,7 +496,7 @@
 
 // debug menu libkernel_sys.prx
 #define sys_debug_menu   0x1D100
-#define sys_debug_menu_1 0x1D1B0
+#define sys_debug_menu_1 0x1D460
 #endif
 
 // libkernel_sys.srpx
