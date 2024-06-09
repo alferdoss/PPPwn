@@ -494,9 +494,6 @@
 #define dipsw_libSceDipsw_2 0x086BD52 //
 #define dipsw_libSceDipsw_3 0xA1D6F2 //
 
-#define sys_debug_menu = 0x1cfc0
-#define sys_debug_menu_1 = 0x1d320
-
 // debug menu libkernel_sys.prx
 #define sys_debug_menu   0x1D100
 #define sys_debug_menu_1 0x1D1B0
