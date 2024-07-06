@@ -32,11 +32,7 @@ CFLAGS += -UMODULE_DUMPER
 CFLAGS += -UENABLE_DEBUG_MENU
 endif
 
-ifneq ($(filter $(FW), 850 900 903 904 950 960 1000 1001 1050 1070 1071 1100),)
 CFLAGS += -DFIRMWARE=$(FW)
-else
-$(error "Invalid firmware")
-endif
 
 all: $(TARGET).bin
 

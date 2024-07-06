@@ -12,7 +12,6 @@
 extern uint8_t payloadbin[];
 extern int32_t payloadbin_size;
 
-
 struct sysent *sysents;
 
 size_t strlen(const char * s) {
@@ -87,6 +86,21 @@ static int ksys_close(struct thread * td, int fd) {
   return td -> td_retval[0];
 }
 
+static int ksys_mkdir(struct thread *td, const char *path, int mode) {
+  int (*sys_mkdir)(struct thread *, struct mkdir_args *) =
+  (void *)sysents[SYS_mkdir].sy_call;
+
+  td->td_retval[0] = 0;
+
+  struct mkdir_args uap;
+  uap.path = (char *)path;
+  uap.mode = mode;
+  int error = sys_mkdir(td, &uap);
+  if (error) return -error;
+
+  return td->td_retval[0];
+}
+
 struct sce_proc * proc_find_by_name(uint8_t * kbase,
   const char * name) {
   struct sce_proc * p;
@@ -106,6 +120,7 @@ struct sce_proc * proc_find_by_name(uint8_t * kbase,
 
   return NULL;
 }
+
 #ifdef USB_LOADER
 static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   int( * sys_read)(struct thread * , struct read_args * ) =
@@ -331,8 +346,48 @@ struct sys_kexec_args {
 };
 
 static int sys_kexec(struct thread * td, struct sys_kexec_args * uap) {
-  return uap->arg ? uap->fptr(td, uap->arg) : uap->fptr(td);
+  return uap->fptr(td, uap);
+}
 
+struct filedesc {
+    void *useless1[3];
+        void *fd_rdir;
+        void *fd_jdir;
+};
+
+void* sys_jailbreak(struct thread *td) {
+
+    struct ucred* cred = td -> td_proc -> p_ucred;
+    struct filedesc* fd = td -> td_proc -> p_fd;
+
+    void *td_ucred = *(void **)(((char *)td) + 304); // p_ucred == td_ucred
+
+
+    void* kbase = (void*)(rdmsr(MSR_LSTAR) - 0x1C0);
+    uint8_t* kernel_ptr = (uint8_t*)kbase;
+    void** got_prison0 =   (void**)&kernel_ptr[PRISON0_addr];
+    void** got_rootvnode = (void**)&kernel_ptr[ROOTVNODE_addr];
+ 
+    cred->cr_uid = 0;
+    cred->cr_ruid = 0;
+    cred->cr_rgid = 0;
+    cred->cr_groups[0] = 0;
+    cred->cr_prison = *got_prison0;
+    fd -> fd_rdir = fd -> fd_jdir = *got_rootvnode;
+ 
+    // sceSblACMgrIsSystemUcred
+    uint64_t *sonyCred = (uint64_t *)(((char *)td_ucred) + 96);
+    *sonyCred = 0xFFFFFFFFFFFFFFFFULL;
+
+    // sceSblACMgrGetDeviceAccessType
+    uint64_t *sceProcType = (uint64_t *)(((char *)td_ucred) + 88);
+    *sceProcType = 0x3801000000000013; // Max access
+
+    // sceSblACMgrHasSceProcessCapability
+    uint64_t *sceProcCap = (uint64_t *)(((char *)td_ucred) + 104);
+    *sceProcCap = 0xFFFFFFFFFFFFFFFFULL; // Sce Process
+
+    return 0;
 }
 
 void stage2(void) {
@@ -431,7 +486,8 @@ void stage2(void) {
 	kmem[0] = 0x40;
 #endif
 
-#if FIRMWARE == 1050
+#if FIRMWARE == 1050 || FIRMWARE == 1070 || FIRMWARE == 1071
+// Dynlib patches needed to run payloads above 9.00
   kmem = (uint8_t *)&kbase[0x213013];
   kmem[0] = 0x90;
   kmem[1] = 0x90;
@@ -537,6 +593,11 @@ void stage2(void) {
   sys -> sy_call = (void * ) sys_kexec;
   sys -> sy_thrcnt = 1;
 
+  sys = &sysents[9];
+  sys -> sy_narg = 2;
+  sys -> sy_call = (void * ) sys_jailbreak;//sys_rejail
+  sys -> sy_thrcnt = 1;
+
   printf("kexec added\n");
 
   // Restore write protection
@@ -587,41 +648,84 @@ return;
 #endif
 
 #ifdef USB_LOADER
- void* buffer = NULL;
- void (*free)(void * ptr, void * type) = (void *)(kbase + free_offset);
- void* M_TEMP = (void *)(kbase + M_TEMP_offset);
-  void * ( * malloc)(unsigned long size, void * type, int flags) = (void * )(kbase + malloc_offset);
-  fd = ksys_open(td, "/mnt/usb0/payload.bin", O_RDONLY, 0);
-  if (fd < 0)
+#define EEXIST 17
+static const int PAYLOAD_SZ = 0x400000;
+
+
+// Function pointers and variables as per your environment
+void *buffer = NULL;
+void (*free)(void *ptr, void *type) = (void *)(kbase + free_offset);
+void *M_TEMP = (void *)(kbase + M_TEMP_offset);
+void *(*malloc)(unsigned long size, void *type, int flags) = (void *)(kbase + malloc_offset);
+
+if ((buffer = malloc(PAYLOAD_SZ, M_TEMP, 0)) == NULL) {
+    printf("Failed to allocate memory for payload\n");
+    return;
+}
+
+// Check USB locations first
+fd = ksys_open(td, "/mnt/usb0/payload.bin", O_RDONLY, 0);
+if (fd < 0) {
     fd = ksys_open(td, "/mnt/usb1/payload.bin", O_RDONLY, 0);
-  if (fd < 0)
-    fd = ksys_open(td, "/mnt/usb2/payload.bin", O_RDONLY, 0);
-  if (fd < 0)
-    fd = ksys_open(td, "/data/payload.bin", O_RDONLY, 0);
+    if (fd < 0) {
+        fd = ksys_open(td, "/mnt/usb2/payload.bin", O_RDONLY, 0);
+    }
+}
 
-  if (fd < 0) {
-    printf( "Failed to open payload.bin from local storage\n");
+if (fd >= 0) {
+    // If payload exists on USB, read it
+
+    int payload_size = ksys_read(td, fd, buffer, PAYLOAD_SZ);
+    if (payload_size < 0) {
+        printf("Failed to read payload.bin from USB\n");
+        ksys_close(td, fd);
+        return;
+    }
+
+    ksys_close(td, fd); // Close USB file after reading
+
+    // Open/create /data/HEN directory
+    ksys_mkdir(td, "/data/HEN", 0755);
+
+    // Open /data/HEN/payload.bin for writing (overwrite)
+    fd = ksys_open(td, "/data/HEN/payload.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) {
+        printf("Failed to open /data/HEN/payload.bin for writing\n");
+        return;
+    }
+
+    // Write payload to internal storage
+    if (ksys_write(td, fd, buffer, payload_size) != payload_size) {
+        printf("Failed to write payload to internal storage\n");
+        ksys_close(td, fd);
+        return;
+    }
+
+    printf("Copied payload from USB to internal storage\n");
+    ksys_close(td, fd); // Close internal storage file after writing
+}
+
+// If payload not found on USB, or after copying from USB, read from internal storage
+fd = ksys_open(td, "/data/HEN/payload.bin", O_RDONLY, 0);
+if (fd < 0) {
+    printf("Failed to open payload.bin from any location\n");
     return;
-  }
+}
 
-  static
-  const int PAYLOAD_SZ = 0x400000;
-
-  if ((buffer = malloc(PAYLOAD_SZ, M_TEMP, 0)) == NULL) {
-   printf(  "Failed to allocate memory for payload\n");
-    return;
-  }
-
-  int payload_size = ksys_read(td, fd, buffer, PAYLOAD_SZ);
-  if (payload_size <= 0) {
-    printf(  "Failed to read payload\n");
+// Read the payload into allocated buffer
+int payload_size = ksys_read(td, fd, buffer, PAYLOAD_SZ);
+if (payload_size <= 0) {
+    printf("Failed to read payload from /data/HEN\n");
     free(buffer, M_TEMP);
+    ksys_close(td, fd);
     return;
-  }
-  ksys_close(td, fd);
-  printf("payload_size: %d\n", payload_size);
+}
 
-  #endif
+ksys_close(td, fd);
+printf("payload_size: %d\n", payload_size);
+
+#endif
+
 
   printf("Finding SceShellCore process...\n");
 
