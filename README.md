@@ -66,7 +66,8 @@ make -C stage2 FW=1100 clean && make -C stage2 FW=1100 MODULE_DUMPER=1
 
 for the USB (or /data) Payload Loader ONLY
 ```sh
-make -C stage2 FW=1100 clean && make -C stage2 FW=1100 USB_LOADER=1
+export FW=1100
+make -C stage2 FW=$FW clean && make -C stage2 FW=$FW USB_LOADER=1
 ```
 
 For other firmwares, e.g. FW 9.00, pass `FW=900`.
