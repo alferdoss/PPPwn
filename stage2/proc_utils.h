@@ -15,7 +15,7 @@
 #include "ksdk_bsd.h"
 #define KCALL_REL32(k, src, dest) do { *(uint32_t *)(k + src + 1) = (dest - src - k - 5); } while(0);
 
-#define PAYLOAD_BASE 0x926200000
+#define PAYLOAD_BASE 0x926600000
 #define PAYLOAD_SIZE 0x400000
 
 // by OSM-Made

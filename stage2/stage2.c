@@ -12,6 +12,7 @@
 extern uint8_t payloadbin[];
 extern int32_t payloadbin_size;
 
+
 struct sysent *sysents;
 
 size_t strlen(const char * s) {
@@ -120,7 +121,6 @@ struct sce_proc * proc_find_by_name(uint8_t * kbase,
 
   return NULL;
 }
-
 #ifdef USB_LOADER
 static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   int( * sys_read)(struct thread * , struct read_args * ) =
@@ -347,6 +347,7 @@ struct sys_kexec_args {
 
 static int sys_kexec(struct thread * td, struct sys_kexec_args * uap) {
   return uap->fptr(td, uap);
+
 }
 
 struct filedesc {
@@ -367,14 +368,14 @@ void* sys_jailbreak(struct thread *td) {
     uint8_t* kernel_ptr = (uint8_t*)kbase;
     void** got_prison0 =   (void**)&kernel_ptr[PRISON0_addr];
     void** got_rootvnode = (void**)&kernel_ptr[ROOTVNODE_addr];
- 
+
     cred->cr_uid = 0;
     cred->cr_ruid = 0;
     cred->cr_rgid = 0;
     cred->cr_groups[0] = 0;
     cred->cr_prison = *got_prison0;
     fd -> fd_rdir = fd -> fd_jdir = *got_rootvnode;
- 
+
     // sceSblACMgrIsSystemUcred
     uint64_t *sonyCred = (uint64_t *)(((char *)td_ucred) + 96);
     *sonyCred = 0xFFFFFFFFFFFFFFFFULL;
@@ -487,7 +488,6 @@ void stage2(void) {
 #endif
 
 #if FIRMWARE == 1050 || FIRMWARE == 1070 || FIRMWARE == 1071
-// Dynlib patches needed to run payloads above 9.00
   kmem = (uint8_t *)&kbase[0x213013];
   kmem[0] = 0x90;
   kmem[1] = 0x90;
@@ -649,8 +649,7 @@ return;
 
 #ifdef USB_LOADER
 #define EEXIST 17
-static const int PAYLOAD_SZ = 0x400000;
-
+static const int PAYLOAD_SZ = 0x80000;
 
 // Function pointers and variables as per your environment
 void *buffer = NULL;
@@ -701,7 +700,7 @@ if (fd >= 0) {
         return;
     }
 
-    printf("Copied payload from USB to internal storage\n");
+    memcpy( & notify.message, "PPPwned: Payload Transferred To Internal Storage", 49);
     ksys_close(td, fd); // Close internal storage file after writing
 }
 
@@ -741,7 +740,7 @@ printf("payload_size: %d\n", payload_size);
 
   // allocate some memory.
   vm_map_lock(map);
-  r = vm_map_insert(map, NULL, NULL, PAYLOAD_BASE, PAYLOAD_BASE + 0x400000, VM_PROT_ALL, VM_PROT_ALL, 0);
+  r = vm_map_insert(map, NULL, NULL, PAYLOAD_BASE, PAYLOAD_BASE + PAYLOAD_SIZE, VM_PROT_ALL, VM_PROT_ALL, 0);
   vm_map_unlock(map);
   if (r) {
     printf("failed to allocate payload memory!\n");
@@ -757,7 +756,7 @@ printf("payload_size: %d\n", payload_size);
 
     int (*proc_rwmem)(struct proc *p, struct uio *uio) = (void *)(kbase + proc_rmem_offset);
 
-    if(payload_size >= 0x400000){
+    if(payload_size >= PAYLOAD_SIZE){
         printf("Size %d too big\n", payload_size);
         return;
     }
